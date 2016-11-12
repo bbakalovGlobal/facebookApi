@@ -1,0 +1,5 @@
+<?php
+define('NEWS_URL', 'https://lenta.ru/rss');
+define('FB_APP_ID', 'app_id');
+define('FB_APP_SECRET', 'app_secret');
+define('FB_LOG_PATH', 'path_to_log/fb.log');
