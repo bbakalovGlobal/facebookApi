@@ -1,2 +1,2 @@
 ##Purpose:##
-* invistigate how works Maps FacebookApi and use that knowledge.
+* invistigate how works FacebookApi and use new knowledge.
