@@ -23,34 +23,42 @@ $permissions = ['email', 'publish_actions', 'publish_pages', 'manage_pages', 'us
 $loginUrl = $helper->getLoginUrl('http://bdn.local/login-callback.php', $permissions);
 
 if (isset($_SESSION['facebook_access_token'])) {
-    echo "<p style='font-size: smaller;'>AccessToken: {$_SESSION['facebook_access_token']}<br></p>";
+    echo "<p style='font-size:smaller;'>AccessToken: {$_SESSION['facebook_access_token']}<br></p>";
     $fb->setDefaultAccessToken($_SESSION['facebook_access_token']);
     if (isset($_GET['action'])) {
         switch ($_GET['action']) {
             case 'post':
-                $newsList = getLentsNews();
+                if (isset($_GET['qty']) && $_GET != 1) {
+                    $newsList = getLentsNews($_GET['qty']);
+                } else {
+                    $newsList = getLentsNews();
+                }
                 $postIds = '';
                 foreach ($newsList as $news) {
                     $fbNews = ['message' => (string)$news->description, 'link' => (string)$news->link];
-                    $postIds = $postIds . ', ' . postFb($fb, $fbNews);
+                    $postIds = empty($postIds) ? $postIds . '' . postFb($fb, $fbNews)
+                        : $postIds . ', ' . postFb($fb, $fbNews);
                 }
                 echo "Have been posted: " . $postIds;
                 break;
             case 'deletePost':
                 if (isset($_GET['postId'])) {
-                    deletePosts($fb, [$_GET['postId']]);
+                    $deletedPostIds = deletePosts($fb, [$_GET['postId']]);
+                    echo 'Was deleted: ' . implode(', ', $deletedPostIds);
                 } else {
                     echo "You should add post ID<a href='index.php?action=deletePost&postId=postId'>DELETE POST</a>";
                 }
                 break;
             case 'deleteAll':
-                deletePosts($fb, getAllPostsId($fb));
+                $deletedPostIds = deletePosts($fb, getAllPostsId($fb));
+                echo 'Were deleted: ' . implode(', ', $deletedPostIds);
                 break;
             default:
                 getAllPostsId($fb);
                 echo "Choose option: <a href='index.php?action=post'>POST</a> | <a href='index.php?action=deletePost&postId=postId'>DELETE POST</a> | <a href='index.php?action=deleteAll'>DELETE ALL</a>";
                 break;
         }
+        echo '<p><a href="index.php">Go home</a></p>';
     } else {
         echo "Choose option: <a href='index.php?action=post'>POST</a> | <a href='index.php?action=deletePost&postId=postId'>DELETE POST</a> | <a href='index.php?action=deleteAll'>DELETE ALL</a>";
     }
@@ -104,7 +112,7 @@ function postFb(Facebook\Facebook $fbConnector, array $msg)
             echo 'Facebook SDK returned an error: ' . $e->getMessage();
             exit;
         }
-        return $response->getGraphNode();
+        return $responseBody['id'];
     } else {
         return '';
     }
@@ -118,13 +126,16 @@ function postFb(Facebook\Facebook $fbConnector, array $msg)
  */
 function deletePosts(Facebook\Facebook $fbConnector, array $postIds)
 {
+    $deletedPostIds = [];
     if (!empty($postIds)) {
         foreach ($postIds as $id) {
             try {
                 $response = $fbConnector->delete($id);
                 $responseBody = $response->getDecodedBody();
+                if ($responseBody['success'] == 1) {
+                    $deletedPostIds[] = $id;
+                }
                 error_log($responseBody['success'] . ':' . $id . "\n", 3, FB_LOG_PATH);
-                return;
             } catch (Facebook\Exceptions\FacebookResponseException $e) {
                 echo 'Graph returned an error: ' . $e->getMessage();
                 exit;
@@ -133,9 +144,8 @@ function deletePosts(Facebook\Facebook $fbConnector, array $postIds)
                 exit;
             }
         }
-    } else {
-        return;
     }
+    return $deletedPostIds;
 }
 
 /**
