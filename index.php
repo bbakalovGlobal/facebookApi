@@ -41,6 +41,9 @@ if (isset($_SESSION['facebook_access_token'])) {
                 }
                 echo "Have been posted: " . $postIds;
                 break;
+            case 'update':
+                updatePost($fb, 1);
+                break;
             case 'deletePost':
                 if (isset($_GET['postId'])) {
                     $deletedPostIds = deletePosts($fb, [$_GET['postId']]);
@@ -116,6 +119,25 @@ function postFb(Facebook\Facebook $fbConnector, array $msg)
     } else {
         return '';
     }
+}
+
+function updatePost($fbConnector, $postId)
+{
+    $postId = '100962850345535_208419606266525';
+    $msg = ['message' => '2222UpdateTitle222'];
+    try {
+        $response = $fbConnector->post("/$postId", $msg, $fbConnector->getDefaultAccessToken());
+        $responseBody = $response->getDecodedBody();
+        var_dump($responseBody);
+    } catch (Facebook\Exceptions\FacebookResponseException $e) {
+        echo 'Graph returned an error: ' . $e->getMessage();
+        exit;
+    } catch (Facebook\Exceptions\FacebookSDKException $e) {
+        echo 'Facebook SDK returned an error: ' . $e->getMessage();
+        exit;
+    }
+//    return $responseBody['id'];
+    return;
 }
 
 /**
